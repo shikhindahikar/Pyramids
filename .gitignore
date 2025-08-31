@@ -1,0 +1,23 @@
+# Ignore Visual Studio user-specific and build files
+.vs/
+*.user
+*.suo
+*.vcxproj.user
+*.obj
+*.log
+*.pch
+*.exe
+*.dll
+*.lib
+*.pdb
+x64/
+Debug/
+Release/
+*.ipch
+*.cache
+*.opensdf
+*.sdf
+*.db
+*.iobj
+*.ipdb
+
