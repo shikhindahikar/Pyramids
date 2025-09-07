@@ -88,36 +88,41 @@ int main()
 	//0.5f, 0.0f, -0.5f, back-right of the pyramid D
     
     float vertices[] = {
-        //triangle ODA
-        0.0f, 0.5f, 0.0f,
-        -0.5f, 0.0f, 0.5f,
-        -0.5f, 0.0f, -0.5f,
+        //triangle ODA      //textures
+		0.0f, 0.5f, 0.0f,   0.5f, 1.0f,
+		-0.5f, 0.0f, 0.5f,  1.0f, 0.0f,
+		-0.5f, 0.0f, -0.5f, 0.0f, 0.0f,
         //triangle OCD
-        0.0f, 0.5f, 0.0f,
-        0.5f, 0.0f, 0.5f,
-        -0.5f, 0.0f, 0.5f,
+        0.0f, 0.5f, 0.0f,   0.5f, 1.0f,
+        0.5f, 0.0f, 0.5f,   1.0f, 0.0f,
+		-0.5f, 0.0f, 0.5f,  0.0f, 0.0f,
 		//triangle OBC
-        0.0f, 0.5f, 0.0f,
-        0.5f, 0.0f, -0.5f,
-		0.5f, 0.0f, 0.5f,
+		0.0f, 0.5f, 0.0f,   0.5f, 1.0f,
+		0.5f, 0.0f, -0.5f,  1.0f, 0.0f,
+		0.5f, 0.0f, 0.5f,   0.0f, 0.0f,
         //triangle OAB
-        0.0f, 0.5f, 0.0f,
-        -0.5f, 0.0f, -0.5f,
-        0.5f, 0.0f, -0.5f,
+		0.0f, 0.5f, 0.0f,   0.5f, 1.0f,
+		-0.5f, 0.0f, -0.5f, 1.0f, 0.0f,
+		0.5f, 0.0f, -0.5f,  0.0f, 0.0f,
         //triangle BAC
-        0.5f, 0.0f, -0.5f,
-        -0.5f, 0.0f, -0.5f,
-        0.5f, 0.0f, 0.5f,
+		0.5f, 0.0f, -0.5f,  0.0f, 0.0f,
+		-0.5f, 0.0f, -0.5f, 1.0f, 0.0f,
+		0.5f, 0.0f, 0.5f,   0.0f, 0.0f,
         //triangle CDA
-        0.5f, 0.0f, 0.5f,
-        -0.5f, 0.0f, 0.5f,
-        -0.5f, 0.0f, -0.5f
+		0.5f, 0.0f, 0.5f,   0.0f, 0.0f,
+		-0.5f, 0.0f, 0.5f,  1.0f, 0.0f,
+		-0.5f, 0.0f, -0.5f, 0.0f, 0.0f
     };
-    
+
+	//Load the texture
+	int width, height, nrChannels;
+	unsigned char* data = stbi_load("texture.png", &width, &height, &nrChannels, 0);
+
     // first, configure the pyramid's VAO (and VBO)
-    GLuint VBO, VAO;
+    GLuint VBO, VAO, tex;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+	glGenTextures(1, &tex);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	//create a new data store for the buffer object currently bound to the target
@@ -127,8 +132,34 @@ int main()
     glBindVertexArray(VAO);
 
 	// position attribute of the triangles
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+	// texture attribute of the triangles
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindTexture(GL_TEXTURE_2D, tex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    if (data) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else {
+        std::cout << "Failed to load texture" << std::endl;
+	}
+
+	stbi_image_free(data);
+
+	pyramidShader.use();
+	glUniform1i(glGetUniformLocation(pyramidShader.ID, "bricks"), 0);
+
 
     // render loop
     // -----------
@@ -163,6 +194,9 @@ int main()
         model = glm::mat4(1.0f);
         pyramidShader.setMat4("model", model);
 
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex);
+
         // render the triangles
         glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, 18);  // 6 triangles, 4 on the sides and 2 on the base
@@ -178,6 +212,7 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
+	glDeleteTextures(1, &tex);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
