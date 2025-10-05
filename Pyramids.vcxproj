@@ -25,6 +25,8 @@
   <ItemGroup>
     <None Include="pyramids.fs" />
     <None Include="pyramids.vs" />
+    <None Include="skybox.fs" />
+    <None Include="skybox.vs" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -32,7 +34,13 @@
     <ClInclude Include="stb_image.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="texture.png" />
+    <Image Include="back.png" />
+    <Image Include="bottom.png" />
+    <Image Include="front.png" />
+    <Image Include="left.png" />
+    <Image Include="pyramid-tex.png" />
+    <Image Include="right.png" />
+    <Image Include="top.png" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

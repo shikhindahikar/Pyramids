@@ -6,5 +6,5 @@ uniform sampler2D bricks;
 
 void main ()
 {
-	FragColor = texture(bricks, TexCoords);	// Temporarily sandish yellow color
+	FragColor = texture(bricks, TexCoords);
 }

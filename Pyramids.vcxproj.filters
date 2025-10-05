@@ -29,6 +29,12 @@
     <None Include="pyramids.vs">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="skybox.fs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="skybox.vs">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
@@ -42,7 +48,25 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="texture.png">
+    <Image Include="pyramid-tex.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="back.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="bottom.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="front.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="left.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="right.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="top.png">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
