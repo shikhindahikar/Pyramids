@@ -108,10 +108,10 @@ int main()
 		0.5f, 0.0f, -0.5f,  0.0f, 0.0f,
 		-0.5f, 0.0f, -0.5f, 1.0f, 0.0f,
 		0.5f, 0.0f, 0.5f,   0.0f, 0.0f,
-        //triangle CDA
-		0.5f, 0.0f, 0.5f,   0.0f, 0.0f,
+        //triangle ADC
+		-0.5f, 0.0f, -0.5f,   0.0f, 0.0f,
 		-0.5f, 0.0f, 0.5f,  1.0f, 0.0f,
-		-0.5f, 0.0f, -0.5f, 0.0f, 0.0f
+		0.5f, 0.0f, 0.5f, 0.0f, 0.0f
     };
 
     float skyboxvertices[] = {
@@ -286,10 +286,8 @@ int main()
         pyramidShader.use();
         pyramidShader.setMat4("projection", projection);
         pyramidShader.setMat4("view", view);
-        model = glm::mat4(1.0f);
         //place the pyramid on bottom of the skybox
-		//model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-        pyramidShader.setMat4("model", model);
+		pyramidShader.setMat4("model", model);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -302,8 +300,12 @@ int main()
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        view = glm::mat4(glm::mat3(camera.GetViewMatrix())); // remove translation from the view matrix
-        skyboxShader.setMat4("view", view);
+        
+        //So that the camera only moves in XZ plane.
+        //camera.Position.y = eyelevel;
+		// remove translation from the view matrix
+		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+		skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
         // skybox cube
         glBindVertexArray(skyboxVAO);
