@@ -286,7 +286,10 @@ int main()
         pyramidShader.use();
         pyramidShader.setMat4("projection", projection);
         pyramidShader.setMat4("view", view);
-        //place the pyramid on bottom of the skybox
+        //place the pyramid on eyelevel
+		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+        //scale down the pyramid
+		model = glm::scale(model, glm::vec3(0.25f, 0.25f, 0.25f));
 		pyramidShader.setMat4("model", model);
 
 		glActiveTexture(GL_TEXTURE0);
@@ -302,10 +305,10 @@ int main()
         skyboxShader.use();
         
         //So that the camera only moves in XZ plane.
-        //camera.Position.y = eyelevel;
-		// remove translation from the view matrix
-		view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
-		skyboxShader.setMat4("view", view);
+        camera.Position.y = -0.98f;
+		//we remove translation to give the illusion of infinite depth and distance
+        view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+        skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
         // skybox cube
         glBindVertexArray(skyboxVAO);
