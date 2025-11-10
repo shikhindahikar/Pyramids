@@ -303,7 +303,6 @@ int main()
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        
         //So that the camera only moves in XZ plane.
         camera.Position.y = -0.98f;
 		//we remove translation to give the illusion of infinite depth and distance
