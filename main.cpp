@@ -25,8 +25,8 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+// camera starts away from the origin so the viewer is not standing inside the pyramid when first run 
+Camera camera(glm::vec3(0.0f, 0.0f, 20.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -295,9 +295,9 @@ int main()
     stbi_image_free(terraindata);
 
     std::vector<unsigned> indices;
-    for (unsigned i = 0; i < height - 1; i += rez)
+    for (unsigned i = 0; i < static_cast<uint16_t>(height - 1); i += rez)
     {
-        for (unsigned j = 0; j < width; j += rez)
+        for (unsigned j = 0; j < static_cast<uint16_t>(width); j += rez)
         {
             for (unsigned k = 0; k < 2; k++)
             {
@@ -360,7 +360,7 @@ int main()
         terrainShader.setMat4("model", model);
 
         glBindVertexArray(terrainVAO);
-        for (unsigned strip = 0; strip < numStrips; strip++)
+        for (unsigned strip = 0; strip < static_cast<uint16_t>(numStrips); strip++)
         {
             glDrawElements(GL_TRIANGLE_STRIP,   // primitive type
                 numTrisPerStrip + 2,   // number of indices to render
@@ -370,13 +370,12 @@ int main()
         
         // drawing the pyramid
         pyramidShader.use();
-        projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         pyramidShader.setMat4("projection", projection);
         pyramidShader.setMat4("view", view);
-        //place the pyramid on eyelevel
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-        //scale down the pyramid
-		pyramidShader.setMat4("model", model);
+        //place the pyramid on the terrain and scale
+		model = glm::translate(model, glm::vec3(0.0f, -7.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
+        pyramidShader.setMat4("model", model);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -389,10 +388,10 @@ int main()
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        //So that the camera only moves in XZ plane.
-        camera.Position.y = -0.99f;
+        //So that the camera only moves in XZ plane but it is eyelevel
+        camera.Position.y = -6.0f;
 		//we remove translation to give the illusion of infinite depth and distance
-        view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+        view = glm::mat4(glm::mat3(view));
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
         // skybox cube
