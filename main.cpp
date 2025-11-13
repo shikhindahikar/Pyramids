@@ -25,8 +25,8 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-// camera
-Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
+// camera starts away from the origin so the viewer is not standing inside the pyramid when first run 
+Camera camera(glm::vec3(0.0f, 0.0f, 20.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -79,6 +79,8 @@ int main()
     Shader pyramidShader("pyramids.vs", "pyramids.fs");
 
     Shader skyboxShader("skybox.vs", "skybox.fs");
+
+    Shader terrainShader("terrain.vs", "terrain.fs");
     
     
 	//0.0f, 0.5f, 0.0f,  top of the pyramid O
@@ -260,6 +262,73 @@ int main()
 	skyboxShader.use();
 	skyboxShader.setInt("skybox", 0);
 
+    stbi_set_flip_vertically_on_load(true);
+
+    unsigned char* terraindata = stbi_load("sahara.png", &width, &height, &nrChannels, 0);
+    if (terraindata)
+    {
+        std::cout << "Loaded heightmap of size " << height << " x " << width << std::endl;
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+
+    std::vector<float> terrainvtx;
+    float yScale = 64.0f / 256.0f, yShift = 16.0f;
+    int rez = 1;
+    unsigned bytePerPixel = nrChannels;
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            unsigned char* pixelOffset = terraindata + (j + width * i) * bytePerPixel;
+            unsigned char y = pixelOffset[0];
+
+            // vertex
+            terrainvtx.push_back(-height / 2.0f + height * i / (float)height);   // vx
+            terrainvtx.push_back((int)y * yScale - yShift);   // vy
+            terrainvtx.push_back(-width / 2.0f + width * j / (float)width);   // vz
+        }
+    }
+    std::cout << "Loaded " << terrainvtx.size() / 3 << " vertices" << std::endl;
+    stbi_image_free(terraindata);
+
+    std::vector<unsigned> indices;
+    for (unsigned i = 0; i < static_cast<uint16_t>(height - 1); i += rez)
+    {
+        for (unsigned j = 0; j < static_cast<uint16_t>(width); j += rez)
+        {
+            for (unsigned k = 0; k < 2; k++)
+            {
+                indices.push_back(j + width * (i + k * rez));
+            }
+        }
+    }
+    std::cout << "Loaded " << indices.size() << " indices" << std::endl;
+
+    const int numStrips = (height - 1) / rez;
+    const int numTrisPerStrip = (width / rez) * 2 - 2;
+    std::cout << "Created lattice of " << numStrips << " strips with " << numTrisPerStrip << " triangles each" << std::endl;
+    std::cout << "Created " << numStrips * numTrisPerStrip << " triangles total" << std::endl;
+
+    // first, configure the cube's VAO (and terrainVBO + terrainIBO)
+    unsigned int terrainVAO, terrainVBO, terrainIBO;
+    glGenVertexArrays(1, &terrainVAO);
+    glBindVertexArray(terrainVAO);
+
+    glGenBuffers(1, &terrainVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, terrainVBO);
+    glBufferData(GL_ARRAY_BUFFER, terrainvtx.size() * sizeof(float), &terrainvtx[0], GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    glGenBuffers(1, &terrainIBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, terrainIBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned), &indices[0], GL_STATIC_DRAW);
+
     // render loop
     while (!glfwWindowShouldClose(window))
     {
@@ -276,21 +345,37 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // view/projection transformations
-        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100000.0f);
         glm::mat4 view = camera.GetViewMatrix();
 
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
+
+        // Drawing terrain
+        terrainShader.use();
+        terrainShader.setMat4("projection", projection);
+        terrainShader.setMat4("view", view);
+
+        // world transformation
+        terrainShader.setMat4("model", model);
+
+        glBindVertexArray(terrainVAO);
+        for (unsigned strip = 0; strip < static_cast<uint16_t>(numStrips); strip++)
+        {
+            glDrawElements(GL_TRIANGLE_STRIP,   // primitive type
+                numTrisPerStrip + 2,   // number of indices to render
+                GL_UNSIGNED_INT,     // index data type
+                (void*)(sizeof(unsigned) * (numTrisPerStrip + 2) * strip)); // offset to starting index
+        }
         
         // drawing the pyramid
         pyramidShader.use();
         pyramidShader.setMat4("projection", projection);
         pyramidShader.setMat4("view", view);
-        //place the pyramid on eyelevel
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
-        //scale down the pyramid
-		model = glm::scale(model, glm::vec3(0.25f, 0.25f, 0.25f));
-		pyramidShader.setMat4("model", model);
+        //place the pyramid on the terrain and scale
+		model = glm::translate(model, glm::vec3(0.0f, -7.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(15.0f, 15.0f, 15.0f));
+        pyramidShader.setMat4("model", model);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, tex);
@@ -303,11 +388,10 @@ int main()
         // draw skybox as last
         glDepthFunc(GL_LEQUAL);  // change depth function so depth test passes when values are equal to depth buffer's content
         skyboxShader.use();
-        
-        //So that the camera only moves in XZ plane.
-        camera.Position.y = -0.98f;
+        //So that the camera only moves in XZ plane but it is eyelevel
+        camera.Position.y = -6.0f;
 		//we remove translation to give the illusion of infinite depth and distance
-        view = glm::mat4(glm::mat3(camera.GetViewMatrix()));
+        view = glm::mat4(glm::mat3(view));
         skyboxShader.setMat4("view", view);
         skyboxShader.setMat4("projection", projection);
         // skybox cube
@@ -324,9 +408,16 @@ int main()
     }
 
     // optional: de-allocate all resources once they've outlived their purpose:
+    glDeleteVertexArrays(1, &terrainVAO);
+    glDeleteBuffers(1, &terrainVBO);
+    glDeleteBuffers(1, &terrainIBO);
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
 	glDeleteTextures(1, &tex);
+    glDeleteVertexArrays(1, &skyboxVAO);
+    glDeleteBuffers(1, &skyboxVBO);
+    glDeleteTextures(1, &skyboxtex);
+
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     glfwTerminate();
